@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>mBlock3 — Crea tu Juego</title>
+  <link rel="stylesheet" href="css/styles.css"/>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23FF6F00'/><text x='16' y='22' font-size='18' text-anchor='middle'>🎨</text></svg>"/>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+  <script src="https://unpkg.com/blockly@10.4.3/blockly_compressed.js"></script>
+  <script src="https://unpkg.com/blockly@10.4.3/blocks_compressed.js"></script>
+  <script src="https://unpkg.com/blockly@10.4.3/javascript_compressed.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════
+     PANTALLA 1 — INICIO
+═══════════════════════════════════════════════════════ -->
+<div id="start-screen" class="screen active">
+  <div class="start-bg">
+    <div class="sun"></div>
+    <div class="cloud cloud1"></div>
+    <div class="cloud cloud2"></div>
+    <div class="cloud cloud3"></div>
+    <div class="mountain mountain1"></div>
+    <div class="mountain mountain2"></div>
+    <div class="grass-strip"></div>
+  </div>
+
+  <div class="logo-container">
+    <div class="logo-robot">
+      <div class="robot-head">
+        <div class="robot-eye left"></div>
+        <div class="robot-eye right"></div>
+        <div class="robot-mouth"></div>
+        <div class="robot-antenna"></div>
+      </div>
+      <div class="robot-body"><div class="robot-heart"></div></div>
+      <div class="robot-legs">
+        <div class="robot-leg"></div>
+        <div class="robot-leg"></div>
+      </div>
+    </div>
+    <!-- Pincel animado junto al robot -->
+    <div class="paintbrush-icon">🎨</div>
+  </div>
+
+  <!-- Botón grande: CREAR MI JUEGO -->
+  <div class="start-btn-container">
+    <div class="start-btn" onclick="goToEditor()">
+      <span class="start-btn-icon">✏️</span>
+    </div>
+    <!-- Botón secundario: cargar último nivel guardado -->
+    <div class="load-btn" id="load-btn" onclick="loadSavedLevel()" style="display:none">
+      <span>▶</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PANTALLA 2 — EDITOR DE NIVELES
+═══════════════════════════════════════════════════════ -->
+<div id="editor-screen" class="screen">
+
+  <!-- Paleta de tiles (barra izquierda) -->
+  <div id="tile-palette">
+    <div class="palette-title">🎨</div>
+
+    <div class="tile-btn active" data-tile="0" onclick="selectTile(0)" title="Suelo">
+      <div class="tile-preview tile-floor"></div>
+    </div>
+    <div class="tile-btn" data-tile="1" onclick="selectTile(1)" title="Pared">
+      <div class="tile-preview tile-wall"></div>
+    </div>
+    <div class="tile-btn" data-tile="4" onclick="selectTile(4)" title="Robot (inicio)">
+      <div class="tile-preview tile-start">🤖</div>
+    </div>
+    <div class="tile-btn" data-tile="3" onclick="selectTile(3)" title="Meta (estrella)">
+      <div class="tile-preview tile-goal">⭐</div>
+    </div>
+
+    <div class="palette-sep"></div>
+
+    <!-- Colores de fondo -->
+    <div class="palette-title">🌈</div>
+    <div class="bg-color-btn" data-color="sky"    onclick="setBgTheme('sky')"    style="background:linear-gradient(#4FC3F7,#81C784)"></div>
+    <div class="bg-color-btn" data-color="sunset" onclick="setBgTheme('sunset')" style="background:linear-gradient(#FF7043,#FFCC80)"></div>
+    <div class="bg-color-btn" data-color="night"  onclick="setBgTheme('night')"  style="background:linear-gradient(#1A0533,#311B92)"></div>
+    <div class="bg-color-btn" data-color="candy"  onclick="setBgTheme('candy')"  style="background:linear-gradient(#F06292,#CE93D8)"></div>
+
+    <div class="palette-sep"></div>
+
+    <!-- Acciones -->
+    <div class="editor-action-btn clear-btn-ed" onclick="clearGrid()" title="Limpiar">🗑️</div>
+    <div class="editor-action-btn" onclick="fillBorder()" title="Añadir paredes al borde">🧱</div>
+  </div>
+
+  <!-- Canvas del editor -->
+  <div id="editor-canvas-wrap">
+    <canvas id="editor-canvas"></canvas>
+    <!-- Mensaje de validación -->
+    <div id="editor-msg"></div>
+  </div>
+
+  <!-- Barra inferior: botones de acción -->
+  <div id="editor-bottom-bar">
+    <div class="ed-btn home-ed" onclick="goHome()">🏠</div>
+    <div class="ed-btn play-ed" onclick="playLevel()" id="play-btn">▶</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     PANTALLA 3 — JUEGO
+═══════════════════════════════════════════════════════ -->
+<div id="game-screen" class="screen">
+
+  <!-- Panel Blockly -->
+  <div id="blockly-panel">
+    <div id="blockly-workspace"></div>
+    <div id="run-btn" onclick="runCode()"><div class="play-triangle"></div></div>
+    <div id="clear-btn" onclick="clearWorkspace()">🗑️</div>
+    <div id="home-nav-btn" onclick="backToEditor()">✏️</div>
+  </div>
+
+  <!-- Panel Phaser -->
+  <div id="phaser-panel">
+    <div id="game-container"></div>
+
+    <!-- Overlay éxito -->
+    <div id="success-overlay" class="overlay hidden">
+      <div class="overlay-content">
+        <div class="big-emoji">🏆</div>
+        <div class="overlay-stars">
+          <span class="big-star" id="ws1">⭐</span>
+          <span class="big-star" id="ws2">⭐</span>
+          <span class="big-star" id="ws3">⭐</span>
+        </div>
+        <div class="overlay-btns">
+          <div class="action-btn green"  onclick="replayLevel()"><span>↺</span></div>
+          <div class="action-btn purple" onclick="backToEditor()"><span>✏️</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overlay fallo -->
+    <div id="fail-overlay" class="overlay hidden">
+      <div class="overlay-content">
+        <div class="big-emoji">😢</div>
+        <div class="overlay-btns">
+          <div class="action-btn orange" onclick="replayLevel()"><span>↺</span></div>
+          <div class="action-btn purple" onclick="backToEditor()"><span>✏️</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="js/levels.js"></script>
+<script src="js/renderer.js"></script>
+<script src="js/blocks.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/game.js"></script>
+<script src="js/ui.js"></script>
+</body>
+</html>
